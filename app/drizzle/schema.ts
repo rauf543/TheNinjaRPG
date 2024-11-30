@@ -2287,3 +2287,40 @@ export const backgroundSchema = mysqlTable(
   },
 );
 export type BackgroundSchema = InferSelectModel<typeof backgroundSchema>;
+
+export const dialogue = mysqlTable(
+  "Dialogue",
+  {
+    id: varchar("id", { length: 191 }).primaryKey().notNull(),
+    speaker: varchar("speaker", { length: 191 }).notNull(),
+    text: text("text").notNull(),
+    choices: json("choices").$type<DialogueChoice[]>().notNull(),
+    nextId: varchar("nextId", { length: 191 }),
+    questId: varchar("questId", { length: 191 }),
+    createdAt: datetime("createdAt", { mode: "date", fsp: 3 })
+      .default(sql(CURRENT_TIMESTAMP(3)))
+      .notNull(),
+    updatedAt: datetime("updatedAt", { mode: "date", fsp: 3 })
+      .default(sql(CURRENT_TIMESTAMP(3)))
+      .notNull(),
+  },
+  (table) => {
+    return {
+      questIdIdx: index("Dialogue_questId_idx").on(table.questId),
+      nextIdIdx: index("Dialogue_nextId_idx").on(table.nextId),
+    };
+  },
+);
+
+export type Dialogue = InferSelectModel<typeof dialogue>;
+
+export const dialogueRelations = relations(dialogue, ({ one }) => ({
+  quest: one(quest, {
+    fields: [dialogue.questId],
+    references: [quest.id],
+  }),
+  nextDialogue: one(dialogue, {
+    fields: [dialogue.nextId],
+    references: [dialogue.id],
+  }),
+}));

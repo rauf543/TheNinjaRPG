@@ -85,6 +85,7 @@ import type { Village, VillageAlliance, VillageStructure } from "@/drizzle/schem
 import type { UserQuest, Clan } from "@/drizzle/schema";
 import type { DrizzleClient } from "@/server/db";
 import type { NavBarDropdownLink } from "@/libs/menus";
+import { UserStatuses } from "@/drizzle/constants";
 
 const pusher = getServerPusher();
 
