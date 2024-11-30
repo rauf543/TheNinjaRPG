@@ -26,7 +26,7 @@ import { intersectUsers } from "@/libs/travel/sector";
 import { intersectTiles } from "@/libs/travel/sector";
 import { useRequiredUserData } from "@/utils/UserContext";
 import { showMutationToast } from "@/libs/toast";
-import { isLocationObjective } from "@/libs/quest";
+import { isLocationObjective, getActiveObjectives } from "@/libs/quest";
 import { getAllyStatus } from "@/utils/alliance";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { round } from "@/utils/math";
@@ -40,6 +40,7 @@ import type { UserData } from "@/drizzle/schema";
 import type { Grid } from "honeycomb-grid";
 import type { GlobalTile, SectorPoint, SectorUser } from "@/libs/travel/types";
 import type { TerrainHex } from "@/libs/hexgrid";
+import { Dialogue, type DialogueNode } from "@/components/ui/dialogue";
 
 interface SectorProps {
   sector: number;
@@ -67,6 +68,9 @@ const Sector: React.FC<SectorProps> = (props) => {
   const [allyAttack, setAllyAttack] = useLocalStorage<boolean>("friendlyAttack", false);
   const [storedLvl, setStoredLvl] = useLocalStorage<number>("minLevelOnScout", 1);
 
+  //Dialogue states:
+  const [isShowingDialogue, setIsShowingDialogue] = useState(false);
+  const [activeDialogue, setActiveDialogue] = useState<DialogueNode | undefined>();
   // References which shouldn't update
   const origin = useRef<TerrainHex | undefined>(undefined);
   const mountRef = useRef<HTMLDivElement | null>(null);
@@ -139,6 +143,8 @@ const Sector: React.FC<SectorProps> = (props) => {
       }
     }
   };
+
+  const { mutate: updateStatus } = api.profile.updateStatus.useMutation();
 
   const { mutate: checkQuest } = api.quests.checkLocationQuest.useMutation({
     onSuccess: async (data) => {
@@ -364,7 +370,24 @@ const Sector: React.FC<SectorProps> = (props) => {
       void updateUsersList(userData);
       userRef.current = userData;
     }
-
+    // Add the dialogue status check here:
+    if (userData.status === "DIALOGUE" && !isShowingDialogue) {
+      setIsShowingDialogue(true);
+      const activeObjectives = getActiveObjectives(userData);
+      const dialogueObjective = activeObjectives.find((obj) => obj.task === "dialogue");
+      if (dialogueObjective && "dialogueId" in dialogueObjective) {
+        const dialogueData = {
+          id: dialogueObjective.dialogueId,
+          speaker: dialogueObjective.description || "NPC",
+          text: dialogueObjective.successDescription || "...",
+          choices: [{ text: "Continue", isEnd: true }],
+        };
+        setActiveDialogue(dialogueData);
+      }
+    } else if (userData.status !== "DIALOGUE") {
+      setIsShowingDialogue(false);
+      setActiveDialogue(undefined);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userData]);
 
@@ -646,6 +669,19 @@ const Sector: React.FC<SectorProps> = (props) => {
             <p className="text-5xl">Attacking {targetUser.username}</p>
           </div>
         </div>
+      )}
+      {isShowingDialogue && activeDialogue && (
+        <Dialogue
+          dialogueData={activeDialogue}
+          onChoice={async (choice) => {
+            if (choice.isEnd) {
+              updateStatus({ status: "AWAKE" });
+              setActiveDialogue(undefined);
+              setIsShowingDialogue(false);
+              checkQuest();
+            }
+          }}
+        />
       )}
     </>
   );

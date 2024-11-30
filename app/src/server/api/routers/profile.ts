@@ -973,6 +973,22 @@ export const profileRouter = createTRPCRouter({
       await deleteUser(ctx.drizzle, input.userId);
       return { success: true, message: "User deleted" };
     }),
+  // Update user status
+  updateStatus: protectedProcedure
+    .input(
+      z.object({
+        status: z.enum(UserStatuses),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      await ctx.drizzle
+        .update(userData)
+        .set({
+          status: input.status,
+          updatedAt: new Date(),
+        })
+        .where(eq(userData.userId, ctx.userId));
+    }),
 });
 
 export const updateNindo = async (

@@ -655,6 +655,20 @@ export const questsRouter = createTRPCRouter({
           if (opponent) return;
         });
       }
+      const dialogueObjective = activeObjectives.find(
+        (objective) => objective.task === "dialogue",
+      );
+      if (dialogueObjective && "dialogueId" in dialogueObjective) {
+        await ctx.drizzle
+          .update(userData)
+          .set({
+            status: "DIALOGUE",
+            updatedAt: new Date(),
+          })
+          .where(eq(userData.userId, ctx.userId));
+
+        notifications.push("Starting dialogue...");
+      }
       // Database updates
       if (notifications.length > 0) {
         // First update user to see if someone already called this function

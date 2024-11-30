@@ -126,6 +126,7 @@ export const UserStatuses = [
   "BATTLE",
   "QUEUED",
   "ASLEEP",
+  "DIALOGUE",
 ] as const;
 export type UserStatus = (typeof UserStatuses)[number];
 

@@ -33,6 +33,7 @@ export const LocationTasks = [
   "move_to_location",
   "collect_item",
   "defeat_opponents",
+  "dialogue",
 ] as const;
 export type LocationTasksType = (typeof LocationTasks)[number];
 
@@ -132,11 +133,19 @@ export const DefeatOpponents = z.object({
   ...complexObjectiveFields,
 });
 
+export const DialogueObjective = z.object({
+  ...baseObjectiveFields,
+  task: z.literal("dialogue").default("dialogue"),
+  dialogueId: z.string().min(1).default("dialogue-1"),
+  ...complexObjectiveFields,
+});
+
 export const AllObjectives = z.union([
   SimpleObjective,
   MoveToObjective,
   CollectItem,
   DefeatOpponents,
+  DialogueObjective,
 ]);
 export type AllObjectivesType = z.infer<typeof AllObjectives>;
 
@@ -203,6 +212,8 @@ export const getObjectiveSchema = (type: string) => {
     return CollectItem;
   } else if (type === "defeat_opponents") {
     return DefeatOpponents;
+  } else if (type === "dialogue") {
+    return DialogueObjective;
   }
   throw new Error(`Unknown objective task ${type}`);
 };
@@ -212,4 +223,5 @@ export const allObjectiveSchema = z.union([
   MoveToObjective,
   CollectItem,
   DefeatOpponents,
+  DialogueObjective,
 ]);
